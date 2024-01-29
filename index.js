@@ -1,29 +1,37 @@
 const express = require('express')
 const app = express()
+const morgan = require('morgan')
 
 app.use(express.json())
 
+// Morgan uses :method, :url, :status, :res[content-length - :response-time ms'
+app.use(morgan('tiny'))
+
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: 'unknown endpoint' })
+}
+
 let persons = [
-    { 
-        "name": "Arto Hellas", 
-        "number": "040-123456",
-        "id": 1
-    },
-    { 
-        "name": "Ada Lovelace", 
-        "number": "39-44-5323523",
-        "id": 2
-    },
-    { 
-        "name": "Dan Abramov", 
-        "number": "12-43-234345",
-        "id": 3
-    },
-    { 
-        "name": "Mary Poppendieck", 
-        "number": "39-23-6423122",
-        "id": 4
-    }
+  {
+    "name": "Arto Hellas",
+    "number": "040-123456",
+    "id": 1
+  },
+  {
+    "name": "Ada Lovelace",
+    "number": "39-44-5323523",
+    "id": 2
+  },
+  {
+    "name": "Dan Abramov",
+    "number": "12-43-234345",
+    "id": 3
+  },
+  {
+    "name": "Mary Poppendieck",
+    "number": "39-23-6423122",
+    "id": 4
+  }
 ]
 
 app.get('/', (request, response) => {
@@ -83,7 +91,7 @@ app.post('/api/persons', (request, response) => {
 
   console.log("body name is", body.name)
 
-  if(!body.name) {
+  if (!body.name) {
     return response.status(400).json({
       error: 'name missing'
     })
@@ -112,3 +120,7 @@ app.post('/api/persons', (request, response) => {
 
   response.json(person)
 })
+
+
+
+app.use(unknownEndpoint)
