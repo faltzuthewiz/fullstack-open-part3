@@ -7,9 +7,26 @@ require('dotenv').config()
 
 app.use(express.json())
 
-// Morgan uses :method, :url, :status, :res[content-length - :response-time ms'
+// creating a custom token for morgan
+morgan.token('body', req => {
+  return JSON.stringify(req.body)
+})
+
+// Morgan uses :method, :url, :status, :res[content-length] - :response-time ms
 app.use(morgan('tiny'))
 app.use(cors())
+
+// for POST typed function
+const customLogger = (morgan(function (tokens, req, res) {
+  return [
+    tokens.method(req, res),
+    tokens.url(req, res),
+    tokens.status(req, res),
+    tokens.res(req, res, 'content-length'), '-',
+    tokens['response-time'](req, res), 'ms',
+    tokens['body'](req, res)
+  ].join(' ')
+}))
 
 const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: 'unknown endpoint' })
@@ -85,7 +102,7 @@ const generateId = () => {
   return id
 }
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', customLogger, (request, response) => {
   const body = request.body
 
   console.log("body name is", body.name)
