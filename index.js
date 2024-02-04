@@ -15,6 +15,7 @@ morgan.token('body', req => {
 // Morgan uses :method, :url, :status, :res[content-length] - :response-time ms
 app.use(morgan('tiny'))
 app.use(cors())
+app.use(express.static('dist'))
 
 // for POST typed function
 const customLogger = (morgan(function (tokens, req, res) {
@@ -95,17 +96,11 @@ const generateId = () => {
   const max = Math.floor(100000)
   const id = Math.floor(Math.random() * (max - min) + min)
 
-  console.log(min)
-  console.log(max)
-  console.log(id)
-
   return id
 }
 
 app.post('/api/persons', customLogger, (request, response) => {
   const body = request.body
-
-  console.log("body name is", body.name)
 
   if (!body.name) {
     return response.status(400).json({
@@ -124,7 +119,6 @@ app.post('/api/persons', customLogger, (request, response) => {
   }
 
   const checkName = persons.find(person => person.name === body.name)
-  console.log(checkName)
 
   if (checkName !== undefined) {
     return response.status(400).json({
