@@ -1,9 +1,10 @@
+require('dotenv').config()
 const express = require('express')
 const app = express()
 const morgan = require('morgan')
 const cors = require('cors')
 
-require('dotenv').config()
+const Person = require('./models/person')
 
 app.use(express.json())
 
@@ -61,7 +62,9 @@ app.get('/', (request, response) => {
 })
 
 app.get('/api/persons', (request, response) => {
-  response.json(persons)
+  Person.find({}).then(persons => {
+    response.json(persons)
+  })
 })
 
 app.get('/info', (request, response) => {
@@ -72,16 +75,9 @@ app.get('/info', (request, response) => {
 })
 
 app.get('/api/persons/:id', (request, response) => {
-  const id = Number(request.params.id)
-
-  const person = persons.find(person => {
-    return person.id === id
-  })
-  if (person) {
+  Person.findById(request.params.id).then(person => {
     response.json(person)
-  } else {
-    response.status(404).end()
-  }
+  })
 })
 
 app.delete('/api/persons/:id', (request, response) => {
@@ -102,21 +98,21 @@ const generateId = () => {
 app.post('/api/persons', customLogger, (request, response) => {
   const body = request.body
 
-  if (!body.name) {
+  if (body.name === undefined) {
     return response.status(400).json({
       error: 'name missing'
     })
-  } else if (!body.number) {
+  } else if (body.number === undefined) {
     return response.status(400).json({
       error: 'number missing'
     })
   }
 
-  const person = {
+  const person = new Person({
     name: body.name,
     number: body.number,
-    id: generateId(),
-  }
+    //id: generateId(),
+  })
 
   const checkName = persons.find(person => person.name === body.name)
 
@@ -126,9 +122,9 @@ app.post('/api/persons', customLogger, (request, response) => {
     })
   }
 
-  persons = persons.concat(person)
-
-  response.json(person)
+  person.save().then(savedPerson => {
+    response.json(person)
+  })
 })
 
 app.use(unknownEndpoint)
