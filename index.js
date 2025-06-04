@@ -5,6 +5,7 @@ const morgan = require('morgan')
 
 const Person = require('./models/person')
 
+app.use(express.static('dist'))
 app.use(express.json())
 
 // creating a custom token for morgan
@@ -14,7 +15,6 @@ morgan.token('body', req => {
 
 // Morgan uses :method, :url, :status, :res[content-length] - :response-time ms
 app.use(morgan('tiny'))
-app.use(express.static('dist'))
 
 // for POST typed function
 const customLogger = (morgan(function (tokens, req, res) {
@@ -30,6 +30,16 @@ const customLogger = (morgan(function (tokens, req, res) {
 
 const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: 'unknown endpoint' })
+}
+
+const errorHandler = (error, request, response, next) => {
+  console.log(error.message)
+
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  }
+
+  next(error)
 }
 
 let persons = [
@@ -81,17 +91,15 @@ app.get('/api/persons/:id', (request, response) => {
         response.status(404).end()
       }
     })
-    .catch(error => {
-      console.log(error)
-      response.status(400).send({ error: 'malformatted id' })
-    })
+    .catch(error => (next(error)))
 })
 
-app.delete('/api/persons/:id', (request, response) => {
-  const id = Number(request.params.id)
-  persons = persons.filter(person => person.id !== id)
-
-  response.status(204).end()
+app.delete('/api/persons/:id', (request, response, next) => {
+  Person.findByIdAndDelete(request.params.id)
+    .then(result => {
+      response.status(204).end()
+    })
+    .catch(error => next(error))
 })
 
 const generateId = () => {
@@ -135,6 +143,7 @@ app.post('/api/persons', customLogger, (request, response) => {
 })
 
 app.use(unknownEndpoint)
+app.use(errorHandler)
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
